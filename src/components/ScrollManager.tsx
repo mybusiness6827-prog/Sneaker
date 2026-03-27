@@ -104,53 +104,18 @@ export const ScrollManager = () => {
   }, [getTargetSection, scrollToSection]);
 
   useEffect(() => {
-    let snapTimeout: NodeJS.Timeout;
-
-    const handleAutoSnap = () => {
-      clearTimeout(snapTimeout);
-
-      // Don't snap if we're currently animating or locked
-      if (isLocked.current) return;
-
-      snapTimeout = setTimeout(() => {
-        if (isLocked.current) return;
-
-        const current = currentScroll.current;
-
-        // Find nearest section
-        let nearestPos = SECTIONS[0];
-        let minDiff = Infinity;
-
-        SECTIONS.forEach((pos) => {
-          const diff = Math.abs(current - pos);
-          if (diff < minDiff) {
-            minDiff = diff;
-            nearestPos = pos;
-          }
-        });
-
-        // If we're more than 2 pixels away from the nearest section, snap to it
-        if (Math.abs(current - nearestPos) > 2) {
-          scrollToSection(nearestPos, true);
-        }
-      }, 1000); // 1 second of inactivity before auto-snapping
-    };
-
-    window.addEventListener('scroll', handleAutoSnap);
     window.addEventListener('wheel', handleWheel, { passive: false });
     window.addEventListener('keydown', handleKeyDown);
     window.addEventListener('touchstart', handleTouchStart);
     window.addEventListener('touchend', handleTouchEnd);
 
     return () => {
-      window.removeEventListener('scroll', handleAutoSnap);
       window.removeEventListener('wheel', handleWheel);
       window.removeEventListener('keydown', handleKeyDown);
       window.removeEventListener('touchstart', handleTouchStart);
       window.removeEventListener('touchend', handleTouchEnd);
-      clearTimeout(snapTimeout);
     };
-  }, [handleWheel, handleKeyDown, handleTouchStart, handleTouchEnd, scrollToSection]);
+  }, [handleWheel, handleKeyDown, handleTouchStart, handleTouchEnd]);
 
 
   return null; // This component handles logic only

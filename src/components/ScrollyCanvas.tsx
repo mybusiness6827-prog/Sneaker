@@ -11,12 +11,15 @@ interface ScrollyCanvasProps {
 export const ScrollyCanvas: React.FC<ScrollyCanvasProps> = ({ frameCount, onLoaded }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
-
+  
   // ─── STATE ──────────────────────────────────────────────────────────────────
   const [images, setImages] = useState<(HTMLImageElement | null)[]>([]);
   const [isLoadedInternal, setIsLoadedInternal] = useState(false);
   const [loadedCount, setLoadedCount] = useState(0);
   const [displayProgress, setDisplayProgress] = useState(0);
+  
+  const THRESHOLD = 60; // Now requirement is 60 frames
+  const MIN_TIME = 3000; // Minimum 3 seconds display time
 
   // ─── SCROLL SYNC ──────────────────────────────────────────────────────────
   const { scrollYProgress } = useScroll({
@@ -25,44 +28,45 @@ export const ScrollyCanvas: React.FC<ScrollyCanvasProps> = ({ frameCount, onLoad
   });
   const frameIndex = useTransform(scrollYProgress, [0, 1], [0, frameCount - 1]);
 
-  // ─── SMOOTH COUNTER LOGIC ──────────────────────────────────────────────────
-  // This logic creates a cinematic progress feel (min 3s duration)
+  // ─── SMART PROGRESS ENGINE ─────────────────────────────────────────────────
+  // Reaches 100 exactly when (loaded >= 60 AND time >= 3s)
   useEffect(() => {
     let active = true;
     const startTime = Date.now();
-    const minDuration = 3000; // Increased to 4s for even smoother feel
 
     const updateDisplay = () => {
       if (!active) return;
-
-      const realProgress = (loadedCount / frameCount) * 100;
+      
+      const realProgress = (loadedCount / THRESHOLD) * 100;
       const timeElapsed = Date.now() - startTime;
-      const timeProgress = (timeElapsed / minDuration) * 100;
+      const timeProgress = (timeElapsed / MIN_TIME) * 100;
 
-      // Follow the time-based progress, but capped by actual loaded progress
-      const target = Math.min(timeProgress, realProgress);
-
+      // Logic: Follow the SLOWER of the two markers (Time vs Load)
+      // This ensures 100% is only reached when both conditions are met.
+      const target = Math.min(realProgress, timeProgress);
+      
       setDisplayProgress(prev => {
-        // Linear-to-smooth transition
-        const diff = target - prev;
-        const next = prev + diff * 0.08;
-
-        if (next >= 99.8 && realProgress >= 100 && timeProgress >= 100) {
-          setIsLoadedInternal(true);
-          if (onLoaded) onLoaded();
-          return 100;
+        // Smoothly approach the target but never go backwards
+        if (target > prev) {
+          const next = prev + (target - prev) * 0.1;
+          
+          // Reveal moment
+          if (next >= 99.8 && realProgress >= 100 && timeProgress >= 100) {
+            setIsLoadedInternal(true);
+            if (onLoaded) onLoaded();
+            return 100;
+          }
+          return next;
         }
-        return next;
+        return prev;
       });
 
-      if (!isLoadedInternal) {
-        requestAnimationFrame(updateDisplay);
-      }
+      if (!isLoadedInternal) requestAnimationFrame(updateDisplay);
     };
 
     requestAnimationFrame(updateDisplay);
     return () => { active = false; };
-  }, [loadedCount, frameCount, isLoadedInternal, onLoaded]);
+  }, [loadedCount, isLoadedInternal, onLoaded]);
 
   // ─── LOADING LOGIC (FETCHING IMAGES) ────────────────────────────────────────
   useEffect(() => {
@@ -81,7 +85,10 @@ export const ScrollyCanvas: React.FC<ScrollyCanvasProps> = ({ frameCount, onLoad
           tempImages[i] = img;
           count++;
           setLoadedCount(count);
-          if (count === frameCount) setImages([...tempImages]);
+          // Update textures at threshold and end
+          if (count === frameCount || count === THRESHOLD) {
+            setImages([...tempImages]);
+          }
         };
         img.onerror = () => {
           if (!active) return;
