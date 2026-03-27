@@ -1,10 +1,9 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
-import { useScroll, useMotionValueEvent, animate } from 'framer-motion';
+import { useEffect, useRef, useCallback } from 'react';
+import { useScroll, useMotionValueEvent, animate, type AnimationPlaybackControls } from 'framer-motion';
 
 const SECTIONS = [0, 1341, 2364];
-const COOLDOWN = 3000; // Increased cooldown to match slower animation
 
 export const ScrollManager = () => {
   const { scrollY } = useScroll();
@@ -16,7 +15,7 @@ export const ScrollManager = () => {
     currentScroll.current = latest;
   });
 
-  const getTargetSection = (direction: 'next' | 'prev') => {
+  const getTargetSection = useCallback((direction: 'next' | 'prev') => {
     const current = currentScroll.current;
 
     let currentIndex = 0;
@@ -35,11 +34,11 @@ export const ScrollManager = () => {
     } else {
       return SECTIONS[Math.max(currentIndex - 1, 0)];
     }
-  };
+  }, []);
 
-  const activeAnimation = useRef<any>(null);
+  const activeAnimation = useRef<AnimationPlaybackControls | null>(null);
 
-  const scrollToSection = (targetPos: number, bypassLock = false) => {
+  const scrollToSection = useCallback((targetPos: number, bypassLock = false) => {
     if (!bypassLock && isLocked.current) return;
 
     // Stop any ongoing animation to prevent fighting
@@ -63,10 +62,10 @@ export const ScrollManager = () => {
         }, 200); // 200ms buffer after animation ends for scroll wheel
       }
     });
-  };
+  }, []);
 
 
-  const handleWheel = (e: WheelEvent) => {
+  const handleWheel = useCallback((e: WheelEvent) => {
     if (isLocked.current) return;
 
     // Check if we've scrolled enough to trigger a move
@@ -74,9 +73,9 @@ export const ScrollManager = () => {
       const direction = e.deltaY > 0 ? 'next' : 'prev';
       scrollToSection(getTargetSection(direction));
     }
-  };
+  }, [getTargetSection, scrollToSection]);
 
-  const handleKeyDown = (e: KeyboardEvent) => {
+  const handleKeyDown = useCallback((e: KeyboardEvent) => {
     // Keyboard always works, no delay/lock
     const key = e.key;
     if (key === 'ArrowDown' || key === 'PageDown') {
@@ -86,13 +85,13 @@ export const ScrollManager = () => {
       e.preventDefault();
       scrollToSection(getTargetSection('prev'), true);
     }
-  };
+  }, [getTargetSection, scrollToSection]);
 
-  const handleTouchStart = (e: TouchEvent) => {
+  const handleTouchStart = useCallback((e: TouchEvent) => {
     touchStart.current = e.touches[0].clientY;
-  };
+  }, []);
 
-  const handleTouchEnd = (e: TouchEvent) => {
+  const handleTouchEnd = useCallback((e: TouchEvent) => {
     if (isLocked.current) return;
     const touchEnd = e.changedTouches[0].clientY;
     const diff = touchStart.current - touchEnd;
@@ -102,7 +101,7 @@ export const ScrollManager = () => {
       const direction = diff > 0 ? 'next' : 'prev';
       scrollToSection(getTargetSection(direction));
     }
-  };
+  }, [getTargetSection, scrollToSection]);
 
   useEffect(() => {
     let snapTimeout: NodeJS.Timeout;
@@ -151,7 +150,7 @@ export const ScrollManager = () => {
       window.removeEventListener('touchend', handleTouchEnd);
       clearTimeout(snapTimeout);
     };
-  }, []);
+  }, [handleWheel, handleKeyDown, handleTouchStart, handleTouchEnd]);
 
 
   return null; // This component handles logic only
