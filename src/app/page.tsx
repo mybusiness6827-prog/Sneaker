@@ -1,3 +1,6 @@
+'use client';
+
+import React, { useState } from 'react';
 import { ScrollyCanvas } from '@/components/ScrollyCanvas';
 import { Overlay } from '@/components/Overlay';
 import { ScrollIndicator } from '@/components/ScrollIndicator';
@@ -5,13 +8,24 @@ import { ScrollManager } from '@/components/ScrollManager';
 
 export default function Home() {
   const show_indicator = false;
+  const [isLoaded, setIsLoaded] = useState(false);
 
   return (
     <main className="relative bg-[#2872A1] no-scrollbar">
-      <ScrollManager />
-      <ScrollIndicator showIndicator={show_indicator} />
-      <Overlay />
-      <ScrollyCanvas frameCount={102} />
+      {/* 
+          WRAPPER FOR MAIN CONTENT: 
+          Hidden (opacity 0) while loading to prevent "bleeding" of section 1 text 
+      */}
+      <div className={`transition-opacity duration-1000 ${isLoaded ? 'opacity-100' : 'opacity-0'}`}>
+        <ScrollManager />
+        <ScrollIndicator showIndicator={show_indicator} />
+        <Overlay />
+      </div>
+
+      <ScrollyCanvas 
+        frameCount={102} 
+        onLoaded={() => setIsLoaded(true)}
+      />
 
       {/* Spacer for bottom if needed or additional sections */}
       <section className="h-screen flex items-center justify-center bg-[#2872A1] relative z-20">
