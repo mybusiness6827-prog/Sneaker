@@ -150,7 +150,7 @@ export const ScrollManager = () => {
       window.removeEventListener('touchend', handleTouchEnd);
       clearTimeout(snapTimeout);
     };
-  }, [handleWheel, handleKeyDown, handleTouchStart, handleTouchEnd]);
+  }, [handleWheel, handleKeyDown, handleTouchStart, handleTouchEnd, scrollToSection]);
 
 
   return null; // This component handles logic only
