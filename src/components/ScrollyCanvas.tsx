@@ -6,20 +6,21 @@ import { useScroll, useTransform, motion, AnimatePresence } from 'framer-motion'
 interface ScrollyCanvasProps {
   frameCount: number;
   onLoaded?: () => void;
+  onFrameUpdate?: (index: number) => void;
 }
 
-export const ScrollyCanvas: React.FC<ScrollyCanvasProps> = ({ frameCount, onLoaded }) => {
+export const ScrollyCanvas: React.FC<ScrollyCanvasProps> = ({ frameCount, onLoaded, onFrameUpdate }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  
+
   // ─── STATE ──────────────────────────────────────────────────────────────────
   const [images, setImages] = useState<(HTMLImageElement | null)[]>([]);
   const [isLoadedInternal, setIsLoadedInternal] = useState(false);
   const [loadedCount, setLoadedCount] = useState(0);
   const [displayProgress, setDisplayProgress] = useState(0);
-  
-  const THRESHOLD = 60; // Now requirement is 60 frames
-  const MIN_TIME = 3000; // Minimum 3 seconds display time
+
+  const THRESHOLD = 60; // Requirement is 60 frames
+  const MIN_TIME = 200; // Minimum 2 seconds display time
 
   // ─── SCROLL SYNC ──────────────────────────────────────────────────────────
   const { scrollYProgress } = useScroll({
@@ -28,29 +29,35 @@ export const ScrollyCanvas: React.FC<ScrollyCanvasProps> = ({ frameCount, onLoad
   });
   const frameIndex = useTransform(scrollYProgress, [0, 1], [0, frameCount - 1]);
 
+  // Sync frame to parent if callback provided
+  useEffect(() => {
+    return frameIndex.on('change', (latest) => {
+      if (onFrameUpdate) onFrameUpdate(latest);
+    });
+  }, [frameIndex, onFrameUpdate]);
+
   // ─── SMART PROGRESS ENGINE ─────────────────────────────────────────────────
-  // Reaches 100 exactly when (loaded >= 60 AND time >= 3s)
+  // Uses real frame loading progress, but waits for time if frames load too fast
   useEffect(() => {
     let active = true;
     const startTime = Date.now();
 
     const updateDisplay = () => {
       if (!active) return;
-      
-      const realProgress = (loadedCount / THRESHOLD) * 100;
+
+      const realProgress = Math.min((loadedCount / THRESHOLD) * 100, 100);
       const timeElapsed = Date.now() - startTime;
       const timeProgress = (timeElapsed / MIN_TIME) * 100;
 
-      // Logic: Follow the SLOWER of the two markers (Time vs Load)
-      // This ensures 100% is only reached when both conditions are met.
-      const target = Math.min(realProgress, timeProgress);
-      
+      // Logic: Follow the real loading progress
+      const target = realProgress;
+
       setDisplayProgress(prev => {
         // Smoothly approach the target but never go backwards
         if (target > prev) {
           const next = prev + (target - prev) * 0.1;
-          
-          // Reveal moment
+
+          // Reveal moment: Frames must be 100% AND Time must be 100%
           if (next >= 99.8 && realProgress >= 100 && timeProgress >= 100) {
             setIsLoadedInternal(true);
             if (onLoaded) onLoaded();
@@ -58,6 +65,14 @@ export const ScrollyCanvas: React.FC<ScrollyCanvasProps> = ({ frameCount, onLoad
           }
           return next;
         }
+
+        // If target is already reached (100%), we still check for time completion to finish
+        if (prev >= 99.8 && realProgress >= 100 && timeProgress >= 100) {
+          setIsLoadedInternal(true);
+          if (onLoaded) onLoaded();
+          return 100;
+        }
+
         return prev;
       });
 
@@ -139,13 +154,17 @@ export const ScrollyCanvas: React.FC<ScrollyCanvasProps> = ({ frameCount, onLoad
     const handleResize = () => {
       const canvas = canvasRef.current;
       if (!canvas) return;
-      const dpr = window.devicePixelRatio || 1;
+      const dpr = Math.max(window.devicePixelRatio || 1, 2.5); // Super-Sampling 2.5x for HDR clarity
       canvas.width = window.innerWidth * dpr;
       canvas.height = window.innerHeight * dpr;
       canvas.style.width = `${window.innerWidth}px`;
       canvas.style.height = `${window.innerHeight}px`;
-      const ctx = canvas.getContext('2d');
-      if (ctx) { ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high'; }
+
+      const ctx = canvas.getContext('2d', { alpha: false });
+      if (ctx) {
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = 'high';
+      }
     };
     window.addEventListener('resize', handleResize);
     handleResize();
@@ -153,7 +172,7 @@ export const ScrollyCanvas: React.FC<ScrollyCanvasProps> = ({ frameCount, onLoad
   }, []);
 
   return (
-    <div ref={containerRef} className="relative h-[500vh] w-full bg-[#2872A1]">
+    <div ref={containerRef} className="relative h-[500vh] w-full">
       <div className="sticky top-0 h-screen w-full overflow-hidden">
 
         {/* SIMPLE MINIMALIST LOADER */}
@@ -163,7 +182,7 @@ export const ScrollyCanvas: React.FC<ScrollyCanvasProps> = ({ frameCount, onLoad
               initial={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               transition={{ duration: 1.2, ease: "easeInOut" }}
-              className="fixed inset-0 flex flex-col items-center justify-center z-[999999] bg-[#C25B33]"
+              className="fixed inset-0 flex flex-col items-center justify-center z-[999999] bg-[#bb593c]"
             >
               <div className="flex flex-col items-center px-6 text-center">
                 <motion.span
@@ -193,7 +212,17 @@ export const ScrollyCanvas: React.FC<ScrollyCanvasProps> = ({ frameCount, onLoad
           )}
         </AnimatePresence>
 
-        <canvas ref={canvasRef} className="h-full w-full block" />
+        <canvas
+          ref={canvasRef}
+          className="h-full w-full block"
+          style={{
+            imageRendering: 'auto',
+            filter: 'contrast(1.1) brightness(1.02)',
+            WebkitPrintColorAdjust: 'exact',
+            transform: 'translateZ(0)',
+            willChange: 'transform'
+          }}
+        />
       </div>
     </div>
   );

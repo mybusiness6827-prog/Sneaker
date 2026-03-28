@@ -4,40 +4,38 @@ import React from 'react';
 import { motion, AnimatePresence, useScroll, type Variants } from 'framer-motion';
 
 // ─── Animation Variants ──────────────────────────────────────────────────────
-const EASE_SPRING = [0.22, 1, 0.36, 1] as [number, number, number, number];
-
 const fadeIn: Variants = {
   hidden: { opacity: 0 },
-  show:   { opacity: 1, transition: { duration: 0.9, ease: 'easeOut' as const } },
-  exit:   { opacity: 0, transition: { duration: 0.4 } },
+  show: { opacity: 1, transition: { duration: 0.9, ease: 'easeOut' as const } },
+  exit: { opacity: 0, transition: { duration: 0.4 } },
 };
 const fadeUp: Variants = {
   hidden: { y: 28, opacity: 0 },
-  show:   { y: 0, opacity: 1, transition: { duration: 0.85, ease: EASE_SPRING } },
+  show: { y: 0, opacity: 1, transition: { duration: 0.85, ease: 'easeInOut' as const } },
 };
 const stagger: Variants = {
   hidden: {},
-  show:   { transition: { staggerChildren: 0.12, delayChildren: 0.3 } },
+  show: { transition: { staggerChildren: 0.12, delayChildren: 0.3 } },
 };
 const slideLeft: Variants = {
   hidden: { x: -60, opacity: 0 },
-  show:   { x: 0, opacity: 1, transition: { duration: 0.9, ease: EASE_SPRING } },
-  exit:   { x: -40, opacity: 0, transition: { duration: 0.35 } },
+  show: { x: 0, opacity: 1, transition: { duration: 0.9, ease: 'easeInOut' as const } },
+  exit: { x: -40, opacity: 0, transition: { duration: 0.35 } },
 };
 const slideRight: Variants = {
   hidden: { x: 60, opacity: 0 },
-  show:   { x: 0, opacity: 1, transition: { duration: 0.9, ease: EASE_SPRING } },
-  exit:   { x: 40, opacity: 0, transition: { duration: 0.35 } },
+  show: { x: 0, opacity: 1, transition: { duration: 0.9, ease: 'easeInOut' as const } },
+  exit: { x: 40, opacity: 0, transition: { duration: 0.35 } },
 };
 const slideInLeft: Variants = {
   hidden: { x: -80, opacity: 0 },
-  show:   { x: 0, opacity: 1, transition: { duration: 0.9, ease: EASE_SPRING } },
-  exit:   { x: -60, opacity: 0, transition: { duration: 0.4 } },
+  show: { x: 0, opacity: 1, transition: { duration: 0.9, ease: 'easeInOut' as const } },
+  exit: { x: -60, opacity: 0, transition: { duration: 0.4 } },
 };
 const slideInRight: Variants = {
   hidden: { x: 80, opacity: 0 },
-  show:   { x: 0, opacity: 1, transition: { duration: 0.9, ease: EASE_SPRING } },
-  exit:   { x: 60, opacity: 0, transition: { duration: 0.4 } },
+  show: { x: 0, opacity: 1, transition: { duration: 0.9, ease: 'easeInOut' as const } },
+  exit: { x: 60, opacity: 0, transition: { duration: 0.4 } },
 };
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -205,9 +203,9 @@ export const Overlay = () => {
                 style={{ background: 'linear-gradient(180deg, transparent, #FFD700 30%, #FF6B35 70%, transparent)' }}
               />
               {[
-                { label: 'Model',   value: 'Retro High OG' },
+                { label: 'Model', value: 'Retro High OG' },
                 { label: 'Leather', value: 'Full-Grain' },
-                { label: 'Unit',    value: 'Nike Air' },
+                { label: 'Unit', value: 'Nike Air' },
               ].map((spec, i) => (
                 <motion.div
                   key={spec.label}
@@ -319,8 +317,8 @@ export const Overlay = () => {
                 </span>
                 {[
                   { name: 'University Blue', bg: '#7EC8E3' },
-                  { name: 'Clean White',     bg: '#FFFFFF' },
-                  { name: 'Pitch Black',     bg: '#111111' },
+                  { name: 'Clean White', bg: '#FFFFFF' },
+                  { name: 'Pitch Black', bg: '#111111' },
                 ].map((c) => (
                   <div key={c.name} className="flex items-center gap-2">
                     <span className="text-[8px] font-bold text-white/60 uppercase tracking-widest">{c.name}</span>
@@ -332,8 +330,8 @@ export const Overlay = () => {
               <div className="w-full h-[1px] opacity-20" style={{ background: 'linear-gradient(90deg, transparent, #7EC8E3)' }} />
 
               {[
-                { label: 'Fit',   value: 'High Top' },
-                { label: 'Feel',  value: 'Cloud-Like' },
+                { label: 'Fit', value: 'High Top' },
+                { label: 'Feel', value: 'Cloud-Like' },
                 { label: 'Build', value: 'Premium Leather' },
               ].map((s, i) => (
                 <motion.div
@@ -429,7 +427,7 @@ export const Overlay = () => {
                   <div className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
                 </div>
               </div>
-              
+
               <div className="mt-6 flex flex-col items-end gap-2 pr-2">
                 <span className="text-[9px] font-bold text-white/40 uppercase tracking-[0.3em]">Hiring Experts</span>
                 <span className="text-[11px] font-black text-white uppercase tracking-widest">7 Day Free Return</span>

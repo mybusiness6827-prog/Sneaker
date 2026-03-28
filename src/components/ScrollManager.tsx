@@ -3,7 +3,7 @@
 import { useEffect, useRef, useCallback } from 'react';
 import { useScroll, useMotionValueEvent, animate, type AnimationPlaybackControls } from 'framer-motion';
 
-const SECTIONS = [0, 1341, 2364];
+const SECTIONS = [0, 1341, 2603];
 
 export const ScrollManager = () => {
   const { scrollY } = useScroll();
@@ -51,7 +51,7 @@ export const ScrollManager = () => {
     // Custom animation for slower, premium transition
     activeAnimation.current = animate(window.scrollY, targetPos, {
       type: "tween",
-      duration: 1.5,
+      duration: 1,
       ease: "easeInOut",
       onUpdate: (latest) => {
         window.scrollTo(0, latest);
@@ -66,6 +66,7 @@ export const ScrollManager = () => {
 
 
   const handleWheel = useCallback((e: WheelEvent) => {
+    e.preventDefault();
     if (isLocked.current) return;
 
     // Check if we've scrolled enough to trigger a move
@@ -74,6 +75,10 @@ export const ScrollManager = () => {
       scrollToSection(getTargetSection(direction));
     }
   }, [getTargetSection, scrollToSection]);
+
+  const handleTouchMove = useCallback((e: TouchEvent) => {
+    e.preventDefault();
+  }, []);
 
   const handleKeyDown = useCallback((e: KeyboardEvent) => {
     // Keyboard always works, no delay/lock
@@ -105,17 +110,19 @@ export const ScrollManager = () => {
 
   useEffect(() => {
     window.addEventListener('wheel', handleWheel, { passive: false });
+    window.addEventListener('touchmove', handleTouchMove, { passive: false });
     window.addEventListener('keydown', handleKeyDown);
     window.addEventListener('touchstart', handleTouchStart);
     window.addEventListener('touchend', handleTouchEnd);
 
     return () => {
       window.removeEventListener('wheel', handleWheel);
+      window.removeEventListener('touchmove', handleTouchMove);
       window.removeEventListener('keydown', handleKeyDown);
       window.removeEventListener('touchstart', handleTouchStart);
       window.removeEventListener('touchend', handleTouchEnd);
     };
-  }, [handleWheel, handleKeyDown, handleTouchStart, handleTouchEnd]);
+  }, [handleWheel, handleTouchMove, handleKeyDown, handleTouchStart, handleTouchEnd]);
 
 
   return null; // This component handles logic only

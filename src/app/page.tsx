@@ -1,34 +1,75 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useScroll } from 'framer-motion';
 import { ScrollyCanvas } from '@/components/ScrollyCanvas';
 import { Overlay } from '@/components/Overlay';
 import { ScrollIndicator } from '@/components/ScrollIndicator';
 import { ScrollManager } from '@/components/ScrollManager';
 
+const SNAP_POINTS = [0, 1341, 2603];
+const THRESHOLD = 250;
+
 export default function Home() {
-  const show_indicator = false;
+  const show_indicator = true;
   const [isLoaded, setIsLoaded] = useState(false);
+  const { scrollY } = useScroll();
+  const [activeSection, setActiveSection] = useState(0);
+
+  useEffect(() => {
+    const update = (latest: number) => {
+      let closest = 0;
+      let minDiff = Infinity;
+      SNAP_POINTS.forEach((pos, idx) => {
+        const diff = Math.abs(latest - pos);
+        if (diff < minDiff) { minDiff = diff; closest = idx; }
+      });
+      // Section 1 is 0, Section 2 is 1, Section 3 is 2
+      setActiveSection(minDiff <= THRESHOLD ? closest : (latest < SNAP_POINTS[1] ? 0 : (latest < SNAP_POINTS[2] ? 1 : 2)));
+    };
+    const unsub = scrollY.on('change', update);
+    return () => unsub();
+  }, [scrollY]);
+
+  // Dynamic colors
+  const bgColor = (activeSection === 0) ? '#bb593c' : '#6094bc';
+
+  // Debugging info (if show_indicator is true)
+  const [currentFrame, setCurrentFrame] = useState(0);
+  const [currentScroll, setCurrentScroll] = useState(0);
+
+  useEffect(() => {
+    const unsubScroll = scrollY.on('change', (v) => setCurrentScroll(Math.round(v)));
+    return () => unsubScroll();
+  }, [scrollY]);
 
   return (
-    <main className="relative bg-[#2872A1] no-scrollbar">
-      {/* 
-          WRAPPER FOR MAIN CONTENT: 
-          Hidden (opacity 0) while loading to prevent "bleeding" of section 1 text 
-      */}
+    <main
+      className="relative no-scrollbar"
+      style={{
+        backgroundColor: bgColor,
+        transition: 'background-color 1s ease-in-out'
+      }}
+    >
       <div className={`transition-opacity duration-1000 ${isLoaded ? 'opacity-100' : 'opacity-0'}`}>
         <ScrollManager />
-        <ScrollIndicator showIndicator={show_indicator} />
+        <ScrollIndicator
+          showIndicator={show_indicator}
+          currentFrame={currentFrame}
+          currentScroll={currentScroll}
+          activeSection={activeSection}
+        />
         <Overlay />
       </div>
 
-      <ScrollyCanvas 
-        frameCount={102} 
+      <ScrollyCanvas
+        frameCount={102}
         onLoaded={() => setIsLoaded(true)}
+        onFrameUpdate={(f) => setCurrentFrame(Math.round(f))}
       />
 
       {/* Spacer for bottom if needed or additional sections */}
-      <section className="h-screen flex items-center justify-center bg-[#2872A1] relative z-20">
+      <section className="h-screen flex items-center justify-center relative z-20">
         <div className="bg-white/5 backdrop-blur-3xl p-16 md:p-24 rounded-[3rem] border border-white/10 text-center max-w-4xl mx-4 shadow-[0_32px_120px_-15px_rgba(0,0,0,0.5)]">
           <span className="text-blue-200/40 font-black text-xs tracking-[0.8em] uppercase mb-8 block">Final Destination</span>
           <h3 className="text-5xl md:text-7xl font-black text-white uppercase tracking-[-0.04em] leading-[0.9]">
